@@ -1,4 +1,4 @@
-import type { Project, Ticket } from '@/data/schema';
+import type { Project, Ticket, Update } from '@/data/schema';
 
 export interface OwnerSelection {
   ids: string[];
@@ -73,6 +73,35 @@ export function projectRole(
   const unassignedHere =
     selection.includeUnassigned &&
     (project.leadId == null || projectTickets.some((ticket) => ticket.assigneeId == null));
+  if (unassignedHere) return 'unassigned';
+  return null;
+}
+
+export function portfolioProjectRole(
+  project: Pick<Project, 'key' | 'leadId'>,
+  updates: Pick<Update, 'projectKey' | 'authorId' | 'ownerId' | 'status'>[],
+  selection: OwnerSelection,
+): 'lead' | 'contributor' | 'unassigned' | null {
+  const openUpdates = updates.filter(
+    (update) => update.projectKey === project.key && update.status === 'open',
+  );
+  if (isAllOwners(selection)) {
+    return project.leadId == null ? 'unassigned' : null;
+  }
+  if (project.leadId && selection.ids.includes(project.leadId)) return 'lead';
+  if (
+    openUpdates.some(
+      (update) =>
+        (update.authorId != null && selection.ids.includes(update.authorId)) ||
+        (update.ownerId != null && selection.ids.includes(update.ownerId)),
+    )
+  ) {
+    return 'contributor';
+  }
+  const unassignedHere =
+    selection.includeUnassigned &&
+    (project.leadId == null ||
+      openUpdates.some((update) => update.authorId == null || update.ownerId == null));
   if (unassignedHere) return 'unassigned';
   return null;
 }

@@ -1,5 +1,7 @@
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
+import { PortfolioProjects } from '@/features/projects/PortfolioProjects';
 import type { DashContext } from '@/components/layout/AppShell';
+import { ExternalAnchor } from '@/components/common/Badges';
 import { RagBadge, RagWhy } from '@/components/common/RagBadge';
 import { EmptyState, PageHeader, PageSkeleton } from '@/components/common/States';
 import { formatDay } from '@/domain/dates';
@@ -20,6 +22,7 @@ export default function ProjectsPage() {
   if (dash.isLoading && !dash.model) return <PageSkeleton />;
   if (!dash.model) return <EmptyState title="No projects" body="The snapshot did not load." />;
   const model = dash.model;
+  if (model.mode === 'portfolio') return <PortfolioProjects dash={dash} />;
   const view = params.get('view') === 'cards' ? 'cards' : 'table';
   const phase = params.get('phase') ?? '';
   const rag = params.get('rag') ?? '';
@@ -153,7 +156,7 @@ export default function ProjectsPage() {
                   'Next milestone',
                   'Updated',
                   '8-week trend',
-                  'Jira',
+                  'Link',
                 ].map((header) => (
                   <th key={header} scope="col" className="px-3 py-2 font-bold tracking-[0.04em]">
                     {header}
@@ -223,15 +226,14 @@ export default function ProjectsPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <a
-                      className="link"
+                    <ExternalAnchor
                       href={jiraUrl(model.jiraBaseUrl, project.project.key, project.project.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      Open
-                    </a>
+                      {jiraUrl(model.jiraBaseUrl, project.project.key, project.project.url)
+                        ? 'Open'
+                        : 'n/a'}
+                    </ExternalAnchor>
                   </td>
                 </tr>
               ))}

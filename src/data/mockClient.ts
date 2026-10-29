@@ -4,7 +4,9 @@ import { ApiError, DataFormatError } from '@/data/errors';
 import type { DataClient, RefreshStart, SnapshotResult } from '@/data/client';
 import { AS_OF, generateSnapshot, TIME_ZONE, type Scenario } from '@/data/mock/generate';
 
-const DURATION_MS = 8000;
+function durationMs(scenario: Scenario) {
+  return scenario === 'refresh-reload' || scenario === 'refresh-unchanged' ? 400 : 8000;
+}
 
 interface ActiveRun {
   runId: string;
@@ -60,7 +62,7 @@ function seedHistory(): RefreshRun[] {
     status: status === 'failed' ? 'failed' : 'succeeded',
     triggeredBy: triggeredBy ?? 'Scheduled',
     progress: 1,
-    message: status === 'failed' ? 'Jira search timed out.' : undefined,
+    message: status === 'failed' ? 'The scheduled read did not finish.' : undefined,
   }));
   return rows;
 }
@@ -107,19 +109,29 @@ export class MockClient implements DataClient {
   private settle(state: Persisted) {
     if (!state.active) return;
     const elapsed = Date.now() - state.active.startedAtMs;
-    if (elapsed < DURATION_MS) return;
+    if (elapsed < durationMs(this.scenario)) return;
     const finished: RefreshRun = {
       runId: state.active.runId,
       status: state.active.fail ? 'failed' : 'succeeded',
       startedAt: iso(state.active.startedAtMs),
-      finishedAt: iso(state.active.startedAtMs + DURATION_MS),
+      finishedAt: iso(state.active.startedAtMs + durationMs(this.scenario)),
       progress: 1,
       triggeredBy: state.active.triggeredBy,
       message: state.active.fail
-        ? 'The automation reported an error while reading Jira.'
-        : undefined,
+        ? 'The automation reported an error while reading the lists.'
+        : this.scenario === 'refresh-reload'
+          ? 'Reloaded the latest data; the daily flow updates it at 6:00 AM Eastern.'
+          : this.scenario === 'refresh-unchanged'
+            ? undefined
+            : undefined,
     };
-    if (!state.active.fail) state.generatedAt = finished.finishedAt ?? state.generatedAt;
+    if (
+      !state.active.fail &&
+      this.scenario !== 'refresh-unchanged' &&
+      this.scenario !== 'refresh-reload'
+    ) {
+      state.generatedAt = finished.finishedAt ?? state.generatedAt;
+    }
     state.history = [finished, ...state.history].slice(0, 10);
     state.active = null;
     save(this.scenario, state);
@@ -139,7 +151,13 @@ export class MockClient implements DataClient {
       );
     }
     const state = this.state();
-    const snapshot = generateSnapshot(this.scenario === 'refresh-fail' ? 'normal' : this.scenario);
+    const base =
+      this.scenario === 'refresh-fail' ||
+      this.scenario === 'refresh-unchanged' ||
+      this.scenario === 'refresh-reload'
+        ? 'portfolio'
+        : this.scenario;
+    const snapshot = generateSnapshot(base);
     if (state.generatedAt && this.scenario !== 'stale') snapshot.generatedAt = state.generatedAt;
     return { kind: 'ok', snapshot, etag: `"${snapshot.generatedAt}"` };
   }
@@ -169,7 +187,7 @@ export class MockClient implements DataClient {
     const state = this.state();
     if (state.active && state.active.runId === runId) {
       const elapsed = Date.now() - state.active.startedAtMs;
-      const progress = Math.max(0, Math.min(0.95, elapsed / DURATION_MS));
+      const progress = Math.max(0, Math.min(0.95, elapsed / durationMs(this.scenario)));
       return {
         runId,
         status: 'running',
@@ -210,6 +228,10 @@ export function resetMockClients() {
       'error',
       'malformed',
       'refresh-fail',
+      'portfolio',
+      'tickets',
+      'refresh-unchanged',
+      'refresh-reload',
     ]) {
       sessionStorage.removeItem(storageKey(scenario as Scenario));
     }

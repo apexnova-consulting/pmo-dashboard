@@ -1,6 +1,7 @@
 export const RAG_CONFIG = {
   red: { overduePct: 0.2, blockedCount: 3, milestoneSlipDays: 14, maxStaleDays: 21 },
   amber: { overduePct: 0.1, blockedCount: 1, milestoneSlipDays: 3, maxStaleDays: 14 },
+  portfolio: { blockedRedDays: 5, staleRedDays: 21, staleAmberDays: 10 },
 } as const;
 
 export const FEATURE_FLAGS = {
@@ -28,7 +29,6 @@ const env = import.meta.env;
 export const config = {
   dataSource: env.VITE_DATA_SOURCE === 'http' ? 'http' : 'mock',
   apiBaseUrl: env.VITE_API_BASE_URL || '/api',
-  jiraBaseUrl: env.VITE_JIRA_BASE_URL || 'https://ccny-pmo.atlassian.net',
   timezone: env.VITE_TIMEZONE || 'America/New_York',
   staleAfterHours: numberEnv(env.VITE_STALE_AFTER_HOURS, 30),
   refreshPollMs: numberEnv(env.VITE_REFRESH_POLL_MS, 3000),
@@ -39,7 +39,7 @@ export const config = {
   staleDays: numberEnv(env.VITE_STALE_DAYS, 10),
   appVersion: env.VITE_APP_VERSION || '1.0.0',
   scenario: env.VITE_SCENARIO || '',
-  authMode: env.VITE_AUTH_MODE === 'static' ? 'static' : 'none',
+  authMode: env.VITE_AUTH_MODE === 'session' ? 'session' : 'none',
   refreshRoles: listEnv(env.VITE_REFRESH_ROLES, []),
 } as const;
 

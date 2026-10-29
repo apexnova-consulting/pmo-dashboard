@@ -40,9 +40,11 @@ export default function AboutPage() {
             <div>
               <dt className="text-sm text-muted">Rows</dt>
               <dd>
-                {snapshot.projects.length} projects · {snapshot.tickets.length} tickets ·{' '}
-                {snapshot.milestones.length} milestones · {snapshot.risks.length} risks ·{' '}
-                {snapshot.history.length} history points
+                {snapshot.projects.length} projects · {snapshot.updates.length} updates (
+                {snapshot.updates.filter((item) => item.source === 'list').length} list,{' '}
+                {snapshot.updates.filter((item) => item.source === 'email').length} email) ·{' '}
+                {snapshot.tickets.length} tickets · {snapshot.milestones.length} milestones ·{' '}
+                {snapshot.risks.length} risks · {snapshot.history.length} history points
               </dd>
             </div>
             <div>
@@ -161,14 +163,14 @@ export default function AboutPage() {
                   className="link font-bold"
                   aria-current={
                     params.get('scenario') === scenario ||
-                    (!params.get('scenario') && scenario === 'normal')
+                    (!params.get('scenario') && scenario === 'portfolio')
                       ? 'page'
                       : undefined
                   }
                   onClick={() => {
                     setParams((prev) => {
                       const next = new URLSearchParams(prev);
-                      if (scenario === 'normal') next.delete('scenario');
+                      if (scenario === 'portfolio') next.delete('scenario');
                       else next.set('scenario', scenario);
                       return next;
                     });

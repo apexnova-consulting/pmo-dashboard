@@ -1,0 +1,580 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "anyOf": [
+        {
+          "type": "number",
+          "const": 1
+        },
+        {
+          "type": "number",
+          "const": 2
+        }
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "jiraBaseUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "timezone": {
+          "default": "America/New_York",
+          "type": "string"
+        },
+        "capacityUnit": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["tickets", "portfolio"]
+        },
+        "nextScheduledRun": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+      },
+      "required": ["timezone"],
+      "additionalProperties": false
+    },
+    "team": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "jiraAccountId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "role": {
+            "type": "string"
+          },
+          "avatarColor": {
+            "type": "string"
+          },
+          "weeklyCapacity": {
+            "type": "number"
+          }
+        },
+        "required": ["id", "displayName"],
+        "additionalProperties": false
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "leadId": {
+            "type": ["string", "null"]
+          },
+          "phase": {
+            "type": "string",
+            "enum": ["intake", "planning", "active", "on_hold", "closing", "closed"]
+          },
+          "startDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetEndDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "healthOverride": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["red", "amber", "green"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "healthNote": {
+            "type": ["string", "null"]
+          },
+          "sponsor": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "reportedHealth": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["red", "amber", "green"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "percentComplete": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextMilestoneName": {
+            "type": ["string", "null"]
+          },
+          "nextMilestoneDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastUpdateDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["key", "name", "leadId", "phase"],
+        "additionalProperties": false
+      }
+    },
+    "tickets": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "projectKey": {
+            "type": "string"
+          },
+          "statusName": {
+            "type": "string"
+          },
+          "statusCategory": {
+            "type": "string",
+            "enum": ["todo", "in_progress", "done"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["highest", "high", "medium", "low", "lowest"]
+          },
+          "assigneeId": {
+            "type": ["string", "null"]
+          },
+          "assigneeName": {
+            "type": ["string", "null"]
+          },
+          "reporterName": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "dueDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "labels": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "flagged": {
+            "default": false,
+            "type": "boolean"
+          },
+          "storyPoints": {
+            "type": ["number", "null"]
+          },
+          "parentKey": {
+            "type": ["string", "null"]
+          },
+          "sprint": {
+            "type": ["string", "null"]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "key",
+          "summary",
+          "type",
+          "projectKey",
+          "statusName",
+          "statusCategory",
+          "priority",
+          "assigneeId",
+          "assigneeName",
+          "created",
+          "updated",
+          "dueDate",
+          "resolvedAt",
+          "labels",
+          "flagged"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "milestones": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projectKey": {
+            "type": "string"
+          },
+          "plannedDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "forecastDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["id", "name", "projectKey", "plannedDate", "forecastDate", "completedDate"],
+        "additionalProperties": false
+      }
+    },
+    "risks": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "projectKey": {
+            "type": "string"
+          },
+          "probability": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "impact": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "ownerId": {
+            "type": ["string", "null"]
+          },
+          "mitigation": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "mitigating", "closed"]
+          }
+        },
+        "required": ["id", "title", "projectKey", "ownerId", "status"],
+        "additionalProperties": false
+      }
+    },
+    "history": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "open": {
+            "type": "number"
+          },
+          "overdue": {
+            "type": "number"
+          },
+          "blocked": {
+            "type": "number"
+          },
+          "created": {
+            "type": "number"
+          },
+          "resolved": {
+            "type": "number"
+          },
+          "ragCounts": {
+            "type": "object",
+            "properties": {
+              "red": {
+                "type": "number"
+              },
+              "amber": {
+                "type": "number"
+              },
+              "green": {
+                "type": "number"
+              }
+            },
+            "required": ["red", "amber", "green"],
+            "additionalProperties": false
+          },
+          "byProject": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["red", "amber", "green"]
+            }
+          },
+          "blockedProjects": {
+            "type": "number"
+          },
+          "openRisks": {
+            "type": "number"
+          }
+        },
+        "required": ["date", "ragCounts"],
+        "additionalProperties": false
+      }
+    },
+    "updates": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "projectKey": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["update", "risk", "decision", "action"]
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "authorId": {
+            "type": ["string", "null"]
+          },
+          "authorName": {
+            "type": ["string", "null"]
+          },
+          "healthSignal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["red", "amber", "green"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "riskLevel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high", "critical"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blocked": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "resolved"]
+          },
+          "ownerId": {
+            "type": ["string", "null"]
+          },
+          "mitigation": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["list", "email"]
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "projectKey",
+          "date",
+          "type",
+          "title",
+          "summary",
+          "authorId",
+          "authorName",
+          "healthSignal",
+          "riskLevel",
+          "blocked",
+          "status",
+          "ownerId",
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "meta",
+    "team",
+    "projects",
+    "tickets",
+    "milestones",
+    "risks",
+    "history",
+    "updates"
+  ],
+  "additionalProperties": false
+}

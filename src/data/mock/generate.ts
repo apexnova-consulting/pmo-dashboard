@@ -10,6 +10,7 @@ import type {
   Ticket,
 } from '@/data/schema';
 import { Snapshot as SnapshotSchema } from '@/data/schema';
+import { portfolioFixture } from '@/data/mock/portfolioFixture';
 import { addDaysYmd, calendarDate, zonedWallTimeToIso } from '@/domain/dates';
 import { explainRag, isBlocked } from '@/domain/metrics';
 import { RAG_CONFIG } from '@/lib/config';
@@ -20,6 +21,8 @@ export const AS_OF_DAY = '2026-10-28';
 export const JIRA_BASE = 'https://ccny-pmo.atlassian.net';
 
 export const SCENARIOS = [
+  'portfolio',
+  'tickets',
   'normal',
   'empty',
   'huge',
@@ -27,6 +30,8 @@ export const SCENARIOS = [
   'error',
   'malformed',
   'refresh-fail',
+  'refresh-unchanged',
+  'refresh-reload',
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -762,11 +767,12 @@ function historyFor(tickets: Ticket[], projects: Project[]): HistoryPoint[] {
   const latest: Record<string, Rag> = {};
   for (const project of projects) {
     const projectTickets = tickets.filter((ticket) => ticket.projectKey === project.key);
-    latest[project.key] = explainRag(project, projectTickets, MILESTONES, AS_OF, TIME_ZONE, {
+    const rag = explainRag(project, projectTickets, MILESTONES, AS_OF, TIME_ZONE, {
       blockedStatuses: ['Blocked', 'On Hold', 'Waiting'],
       staleDays: 10,
       rag: RAG_CONFIG,
     }).rag;
+    if (rag !== 'none') latest[project.key] = rag;
   }
   return dates.map((date, index) => {
     const prev = addDaysYmd(date, -7);
@@ -822,6 +828,14 @@ function team() {
 }
 
 export function generateSnapshot(scenario: Scenario = 'normal'): Snapshot {
+  if (
+    scenario === 'portfolio' ||
+    scenario === 'refresh-unchanged' ||
+    scenario === 'refresh-reload'
+  ) {
+    return SnapshotSchema.parse(portfolioFixture);
+  }
+  if (scenario === 'tickets') return generateSnapshot('normal');
   if (scenario === 'empty') {
     return SnapshotSchema.parse({
       schemaVersion: 1,
@@ -893,5 +907,5 @@ function hugeTickets(random: () => number): Ticket[] {
 
 export function parseScenario(value: string | null | undefined): Scenario {
   if (value && (SCENARIOS as readonly string[]).includes(value)) return value as Scenario;
-  return 'normal';
+  return 'portfolio';
 }

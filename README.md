@@ -1,8 +1,18 @@
 # CCNY PMO Dashboard
 
-Internal portfolio view for the City College of New York PMO. It reads a daily Jira snapshot. It does not write back to Jira.
+Internal portfolio view for the City College of New York PMO. It reads a daily snapshot that Power Automate builds from two SharePoint lists. The browser never calls SharePoint or Power Automate.
 
-The screen is ready to demo on mock data. Pointing `VITE_DATA_SOURCE` at `http` is the only application change required when the automation proxy exists.
+**Do not connect real list data until sign-in is turned on.** `VITE_AUTH_MODE=none` is for the mock demo only. A production build with `VITE_DATA_SOURCE=http` and `VITE_AUTH_MODE=none` stops on “Sign-in required”.
+
+## Architecture
+
+```
+browser  →  Vercel /api  →  Microsoft Graph  →  SharePoint file
+                ↑
+daily flow  ────┘  (writes snapshot.json; the browser pulls)
+```
+
+The flow does not push into the app. Refresh asks `/api/refresh` to start the flow, then polls until a newer snapshot exists.
 
 ## Setup
 
@@ -12,56 +22,52 @@ cp .env.example .env
 npm run dev
 ```
 
-Open http://127.0.0.1:5173.
+Open http://127.0.0.1:5173. The default scenario is the SharePoint-shaped portfolio (`?scenario=portfolio`). `?scenario=tickets` is the earlier ticket snapshot. No credentials are required for the demo.
 
-| Script              | What it does                    |
-| ------------------- | ------------------------------- |
-| `npm run dev`       | Local app                       |
-| `npm test`          | Unit and component tests        |
-| `npm run test:e2e`  | Playwright smoke and axe checks |
-| `npm run lint`      | ESLint, including jsx-a11y      |
-| `npm run typecheck` | `tsc --noEmit`                  |
-| `npm run build`     | Typecheck and production bundle |
+`npm run dev:api` (`vercel dev`) serves the `/api` routes with the fake Graph client when `REFRESH_MODE=mock`.
+
+| Script                                   | What it does                           |
+| ---------------------------------------- | -------------------------------------- |
+| `npm run dev`                            | Local screens, mock data               |
+| `npm test`                               | Unit and component tests               |
+| `npm run test:e2e`                       | Playwright and axe                     |
+| `npm run lint` / `npm run typecheck`     | ESLint and `tsc`                       |
+| `npm run build`                          | Production bundle                      |
+| `npm run schema:export`                  | Regenerate `docs/snapshot.schema.json` |
+| `npm run validate:snapshot -- file.json` | Print field-path validation errors     |
+
+`VITE_*` values are baked in at build time. Change one, then redeploy. Server variables (`MS_*`, `SP_*`, `SESSION_SECRET`, `REFRESH_FLOW_URL`) are read only inside `/api`.
+
+The app uses Zod 4. Production `npm audit` is gated at critical. Remaining advisories are in dev-only test tools and are not in the static bundle.
+
+## Modes
+
+`getMode()` in `src/domain/mode.ts`:
+
+- Tickets present, and `meta.mode` is not `portfolio`: ticket screens, same behavior as before.
+- No tickets: portfolio mode. Health comes from reported status, updates, risks, and dates. A project with no updates and no reported health is **No data**, never Green.
+- `meta.mode` overrides that choice.
 
 ## Environments
 
-|                | `VITE_DATA_SOURCE` | Notes                                          |
-| -------------- | ------------------ | ---------------------------------------------- |
-| Dev / demo     | `mock`             | Seeded City College portfolio. No network      |
-| Staging / prod | `http`             | Same-origin `/api/snapshot` and `/api/refresh` |
+|            | `VITE_DATA_SOURCE` | `VITE_AUTH_MODE`                   | `REFRESH_MODE`             |
+| ---------- | ------------------ | ---------------------------------- | -------------------------- |
+| Demo       | `mock`             | `none`                             | unused                     |
+| Local API  | `http`             | `none` only if `REFRESH_MODE=mock` | `mock`                     |
+| Production | `http`             | `session`                          | `trigger` or `reload-only` |
 
-Mock scenarios, from Data & Status or `?scenario=`: `normal`, `empty`, `huge`, `stale`, `error`, `malformed`, `refresh-fail`.
+Switching the real Graph client on is environment variables only. See `docs/HANDOFF.md`.
 
-## What the header filter means
+## Health and the owner filter
 
-All, each person on `snapshot.team`, and Unassigned. Several can be selected. The choice is stored in `?owner=` and remembered in the browser.
+Portfolio rules and thresholds live in `RAG_CONFIG` (`src/lib/config.ts`). The Why control lists the rules that fired. A `healthOverride` is labeled as a PMO override and wins.
 
-A project is included when that person is the lead, or is assigned to at least one open ticket. The projects table says Lead or Contributor. Adding a fourth person is a data change only.
-
-## Health
-
-Red if any red rule is true, otherwise amber, otherwise green. Thresholds live in `src/lib/config.ts` (`RAG_CONFIG`). A project's `healthOverride` wins and is labeled as a PMO override. Each project has a Why control that lists the rules that fired.
-
-Blocked statuses, stale days, and the missed-run banner are environment variables. See `.env.example`.
+The header filter is everyone on `snapshot.team`, plus Unassigned. A project is included when that person is the lead, or the author or owner of an open update. In ticket mode the rule is still lead or assignee on an open ticket.
 
 ## Refresh
 
-The Refresh button calls `POST /api/refresh`, then polls. In mock mode the run lasts about eight seconds, can fail (`?scenario=refresh-fail`), and attaches if one is already running. Shift+R starts it, except while typing in a field. There is a 60 second cooldown after a success.
-
-The browser must not call Power Automate directly. The proxy holds the flow URL.
-
-## Auth
-
-`VITE_AUTH_MODE=none` for the demo. `static` expects Azure Static Web Apps (`/.auth/me`, redirect to `/.auth/login/aad`). College SSO should sit in front of production either way. Unauthenticated API calls should return 401.
+Shift+R, or the header button. After a success the screen checks that `generatedAt` moved. If it did not, the banner says the data did not change. `reload-only` says the latest file was reloaded and names the daily run time. Polling pauses while the tab is hidden.
 
 ## Brand
 
-Purple `#7D55C7` and yellow `#F3D03E` are the 2026 CCNY style-guide values (PMS 2665 C and PMS 129 C). The header wordmark is the official one-line white logo from the college's public logo package, shown only on the purple field and not recolored. Fonts are self-hosted Lato and Raleway, the brand sans and display faces, with Verdana as the fallback. This is an internal PMO tool, not a public college site.
-
-## Add a KPI
-
-Add a pure function under `src/domain`, a definition in `METRICS`, and one entry rendered by `KpiCard`. Do not invent a number the snapshot does not contain.
-
-## Known dependency note
-
-`npm audit` reports a high advisory in Zod 3 that is fixed in Zod 4. The JSON contract in `docs/DATA_CONTRACT.md` is unchanged. Production audit in CI gates on critical issues. Dev-only Vitest advisories are not shipped in the static bundle.
+Purple `#7D55C7` and yellow `#F3D03E` are the 2026 CCNY values. The header wordmark is the official one-line white logo, only on the purple field. Fonts are self-hosted Lato and Raleway. This is an internal PMO tool, not a public college site.

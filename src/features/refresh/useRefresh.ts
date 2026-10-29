@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { getDataClient } from '@/data/factory';
+import type { Snapshot } from '@/data/schema';
 import { config } from '@/lib/config';
 import { initialRefreshState, refreshReducer, type RefreshState } from '@/domain/refreshMachine';
 import { useAnnounce } from '@/app/announce';
@@ -95,11 +96,23 @@ export function useRefresh() {
           window.sessionStorage.removeItem(RUN_KEY);
           if (run.status === 'succeeded') {
             const at = Date.now();
+            const previous =
+              queryClient.getQueryData<Snapshot>(['snapshot', scenario])?.generatedAt ?? null;
             window.sessionStorage.setItem(SUCCESS_KEY, String(at));
-            dispatch({ type: 'poll', status: 'succeeded', now: at, progress: 1 });
             await queryClient.invalidateQueries({ queryKey: ['snapshot'] });
             await queryClient.invalidateQueries({ queryKey: ['refresh-history'] });
-            announce('Data updated');
+            const next =
+              queryClient.getQueryData<Snapshot>(['snapshot', scenario])?.generatedAt ?? null;
+            const reload = (run.message ?? '').startsWith('Reloaded');
+            const unchanged = previous != null && next === previous;
+            const notice = reload
+              ? (run.message ?? 'Reloaded the latest data')
+              : unchanged
+                ? 'Refresh finished but the data did not change'
+                : 'Data updated';
+            dispatch({ type: 'poll', status: 'succeeded', now: at, progress: 1, message: notice });
+            window.dispatchEvent(new CustomEvent('pmo-refresh-notice', { detail: notice }));
+            announce(notice);
           } else {
             dispatch({ type: 'poll', status: 'failed', now: Date.now(), message: run.message });
             announce(`Refresh failed: ${run.message ?? 'unknown error'}`);
@@ -119,6 +132,7 @@ export function useRefresh() {
           return;
         }
         const wait = Date.now() - started > 30_000 ? 10_000 : config.refreshPollMs;
+        if (document.visibilityState === 'hidden') return;
         timer = window.setTimeout(() => void tick(), wait);
       } catch (error) {
         const message =

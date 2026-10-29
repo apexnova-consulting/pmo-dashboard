@@ -1,12 +1,13 @@
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import type { DashContext } from '@/components/layout/AppShell';
 import { BurnupChart } from '@/components/charts/Charts';
-import { PriorityBadge, StatusLabel } from '@/components/common/Badges';
+import { ExternalAnchor, PriorityBadge, StatusLabel } from '@/components/common/Badges';
 import { RagBadge, RagWhy } from '@/components/common/RagBadge';
 import { EmptyState, PageHeader, PageSkeleton } from '@/components/common/States';
 import { KpiCard } from '@/components/kpi/KpiCard';
 import { addDaysYmd, calendarDate, formatDay } from '@/domain/dates';
 import { jiraUrl, phaseLabel } from '@/domain/derive';
+import { PortfolioDetail } from '@/features/projects/PortfolioProjects';
 import { useScopedHref } from '@/hooks/useFilters';
 
 export default function ProjectDetailPage() {
@@ -28,6 +29,7 @@ export default function ProjectDetailPage() {
       />
     );
   }
+  if (dash.model.mode === 'portfolio') return <PortfolioDetail dash={dash} projectKey={key} />;
   const tickets = dash.model.tickets.filter((item) => item.ticket.projectKey === key);
   const milestones = dash.model.milestones.filter((item) => item.milestone.projectKey === key);
   const timeZone = dash.model.timeZone;
@@ -64,14 +66,11 @@ export default function ProjectDetailPage() {
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <RagBadge rag={enriched.rag.rag} />
         <RagWhy result={enriched.rag} />
-        <a
-          className="link"
-          href={jiraUrl(dash.model.jiraBaseUrl, project.key, project.url)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open in Jira
-        </a>
+        {jiraUrl(dash.model.jiraBaseUrl, project.key, project.url) ? (
+          <ExternalAnchor href={jiraUrl(dash.model.jiraBaseUrl, project.key, project.url)}>
+            Open in tracker
+          </ExternalAnchor>
+        ) : null}
         <span className="text-sm text-muted">
           Updated {enriched.lastUpdated ? formatDay(enriched.lastUpdated, timeZone) : 'n/a'}
         </span>
@@ -157,14 +156,12 @@ export default function ProjectDetailPage() {
               {tickets.map((item) => (
                 <tr key={item.ticket.key} className="border-t border-line">
                   <td className="px-3 py-2">
-                    <a
-                      className="link font-bold"
-                      href={jiraUrl(dash.model!.jiraBaseUrl, item.ticket.key, item.ticket.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <ExternalAnchor
+                      className="font-bold"
+                      href={jiraUrl(dash.model?.jiraBaseUrl, item.ticket.key, item.ticket.url)}
                     >
                       {item.ticket.key}
-                    </a>
+                    </ExternalAnchor>
                   </td>
                   <td className="px-3 py-2">{item.ticket.summary}</td>
                   <td className="px-3 py-2">{item.assignee?.displayName ?? 'Unassigned'}</td>

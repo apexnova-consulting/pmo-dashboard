@@ -101,7 +101,7 @@ export function refreshReducer(state: RefreshState, event: RefreshEvent): Refres
           ...state,
           phase: 'idle',
           progress: 1,
-          message: 'Data updated',
+          message: event.message || 'Data updated',
           error: null,
           lastSuccessAt: event.now,
           runId: null,

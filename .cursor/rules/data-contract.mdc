@@ -4,4 +4,4 @@ globs: src/data/schema.ts,docs/DATA_CONTRACT.md
 alwaysApply: false
 ---
 
-Do not change `src/data/schema.ts` without bumping `schemaVersion` and updating `docs/DATA_CONTRACT.md`. Unknown JSON fields are ignored. A breaking change is any rename, removal, or tighter requirement.
+Do not change `src/data/schema.ts` without bumping `schemaVersion` and updating `docs/DATA_CONTRACT.md` and `docs/snapshot.schema.json` (`npm run schema:export`). Versions 1 and 2 both parse. Unknown JSON fields are ignored. A breaking change is any rename, removal, or tighter requirement.

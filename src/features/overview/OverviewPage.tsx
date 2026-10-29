@@ -1,9 +1,10 @@
 import { Link, useOutletContext } from 'react-router-dom';
+import { PortfolioOverview } from '@/features/overview/PortfolioOverview';
 import type { DashContext } from '@/components/layout/AppShell';
 import { BurnChart, HealthTrend, StatusDonut } from '@/components/charts/Charts';
 import { EmptyState, PageHeader, PageSkeleton } from '@/components/common/States';
 import { KpiCard } from '@/components/kpi/KpiCard';
-import { PriorityBadge } from '@/components/common/Badges';
+import { ExternalAnchor, PriorityBadge } from '@/components/common/Badges';
 import { jiraUrl } from '@/domain/derive';
 import { formatDay } from '@/domain/dates';
 import { useScopedHref } from '@/hooks/useFilters';
@@ -48,6 +49,7 @@ export default function OverviewPage() {
     );
   }
   const { model } = dash;
+  if (model.mode === 'portfolio') return <PortfolioOverview dash={dash} />;
   const { kpis } = model;
   const totalRag = Math.max(kpis.projects.red + kpis.projects.amber + kpis.projects.green, 1);
   return (
@@ -153,15 +155,17 @@ export default function OverviewPage() {
                   {model.needsAttention.map((item) => (
                     <tr key={item.ticket.key} className="border-t border-line">
                       <td className="px-2 py-2">
-                        <a
-                          className="link font-bold"
+                        <ExternalAnchor
+                          className="font-bold"
                           href={jiraUrl(model.jiraBaseUrl, item.ticket.key, item.ticket.url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          sr={
+                            jiraUrl(model.jiraBaseUrl, item.ticket.key, item.ticket.url)
+                              ? '(opens in the tracker)'
+                              : undefined
+                          }
                         >
                           {item.ticket.key}
-                          <span className="sr-only"> (opens in Jira)</span>
-                        </a>
+                        </ExternalAnchor>
                       </td>
                       <td className="px-2 py-2">{item.ticket.summary}</td>
                       <td className="px-2 py-2">{item.projectName}</td>

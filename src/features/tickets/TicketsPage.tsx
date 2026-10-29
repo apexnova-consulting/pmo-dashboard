@@ -10,12 +10,13 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import type { DashContext } from '@/components/layout/AppShell';
-import { PriorityBadge, StatusLabel } from '@/components/common/Badges';
+import { ExternalAnchor, PriorityBadge, StatusLabel } from '@/components/common/Badges';
 import { Drawer, Modal } from '@/components/ui/dialog';
 import { EmptyState, PageHeader, PageSkeleton } from '@/components/common/States';
 import { toCsv } from '@/domain/csv';
 import { formatDay } from '@/domain/dates';
 import { jiraUrl, type EnrichedTicket } from '@/domain/derive';
+import { useScopedHref } from '@/hooks/useFilters';
 import { useDensity, useMediaQuery } from '@/hooks/useTheme';
 import { downloadText } from '@/lib/utils';
 
@@ -52,6 +53,7 @@ function loadColumns(): ColId[] {
 
 export default function TicketsPage() {
   const dash = useOutletContext<DashContext>();
+  const href = useScopedHref();
   const [params, setParams] = useSearchParams();
   const [sorting, setSorting] = useState<SortingState>([{ id: 'age', desc: true }]);
   const [columns, setColumns] = useState<ColId[]>(loadColumns);
@@ -114,15 +116,13 @@ export default function TicketsPage() {
         header: 'Key',
         accessorFn: (row) => row.ticket.key,
         cell: ({ row }) => (
-          <a
-            className="link font-bold"
+          <ExternalAnchor
+            className="font-bold"
             href={jiraUrl(model.jiraBaseUrl, row.original.ticket.key, row.original.ticket.url)}
-            target="_blank"
-            rel="noopener noreferrer"
             onClick={(event) => event.stopPropagation()}
           >
             {row.original.ticket.key}
-          </a>
+          </ExternalAnchor>
         ),
       },
       type: { id: 'type', header: 'Type', accessorFn: (row) => row.ticket.type },
@@ -183,6 +183,16 @@ export default function TicketsPage() {
 
   if (dash.isLoading && !dash.model) return <PageSkeleton />;
   if (!dash.model) return <EmptyState title="No tickets" body="The snapshot did not load." />;
+  if (dash.model.mode === 'portfolio') {
+    return (
+      <EmptyState
+        title="No tickets in this snapshot"
+        body="Status updates live on the Updates page. Ticket tools appear when a snapshot includes tickets."
+        actionHref={href('/updates')}
+        actionLabel="Open updates"
+      />
+    );
+  }
 
   const setParam = (key: string, value: string) => {
     setParams((prev) => {
@@ -391,7 +401,8 @@ export default function TicketsPage() {
         >
           <table className="w-full text-left text-sm">
             <caption className="sr-only">
-              {rows.length} tickets. Activate a row for details. The key opens Jira.
+              {rows.length} tickets. Activate a row for details. The key opens the tracker when a
+              link is present.
             </caption>
             <thead className="sticky top-0 bg-sunken">
               {table.getHeaderGroups().map((group) => (
@@ -515,14 +526,14 @@ export default function TicketsPage() {
             <p className="text-muted">
               This snapshot did not include a description or comment history.
             </p>
-            <a
-              className="link font-bold"
+            <ExternalAnchor
+              className="font-bold"
               href={jiraUrl(dash.model.jiraBaseUrl, selected.ticket.key, selected.ticket.url)}
-              target="_blank"
-              rel="noopener noreferrer"
             >
-              Open in Jira
-            </a>
+              {jiraUrl(dash.model.jiraBaseUrl, selected.ticket.key, selected.ticket.url)
+                ? 'Open in tracker'
+                : 'No tracker link'}
+            </ExternalAnchor>
           </div>
         ) : null}
       </Drawer>
