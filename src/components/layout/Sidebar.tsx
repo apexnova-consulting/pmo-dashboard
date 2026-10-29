@@ -5,30 +5,53 @@ import { FEATURE_FLAGS } from '@/lib/config';
 import { useScopedHref } from '@/hooks/useFilters';
 import { cn } from '@/lib/utils';
 
-const groups = [
-  {
-    label: 'Portfolio',
-    items: [
-      { to: '/', label: 'Overview', end: true },
-      { to: '/projects', label: 'Projects', end: false },
-      { to: '/tickets', label: 'Tickets & Tasks', end: false },
-      { to: '/risks', label: 'Risks & Blockers', end: false },
-    ],
-  },
-  {
-    label: 'People',
-    items: [
-      { to: '/my-work', label: 'My Work', end: false },
-      ...(FEATURE_FLAGS.showWorkload ? [{ to: '/workload', label: 'Workload', end: false }] : []),
-    ],
-  },
-  {
-    label: 'System',
-    items: [{ to: '/about', label: 'Data & Status', end: false }],
-  },
-];
+function groupsFor(mode: 'tickets' | 'portfolio') {
+  return [
+    {
+      label: 'Portfolio',
+      items: [
+        { to: '/', label: 'Overview', end: true },
+        { to: '/projects', label: 'Projects', end: false },
+        mode === 'portfolio'
+          ? { to: '/updates', label: 'Updates', end: false }
+          : { to: '/tickets', label: 'Tickets & Tasks', end: false },
+        { to: '/risks', label: 'Risks & Blockers', end: false },
+      ],
+    },
+    {
+      label: 'People',
+      items: [
+        {
+          to: '/my-work',
+          label: mode === 'portfolio' ? 'My Projects' : 'My Work',
+          end: false,
+        },
+        ...(FEATURE_FLAGS.showWorkload
+          ? [
+              {
+                to: '/workload',
+                label: mode === 'portfolio' ? 'Projects per lead' : 'Workload',
+                end: false,
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      label: 'System',
+      items: [{ to: '/about', label: 'Data & Status', end: false }],
+    },
+  ];
+}
 
-function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+function NavItems({
+  mode,
+  onNavigate,
+}: {
+  mode: 'tickets' | 'portfolio';
+  onNavigate?: () => void;
+}) {
+  const groups = groupsFor(mode);
   const href = useScopedHref();
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-1">
@@ -62,15 +85,23 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ mode }: { mode: 'tickets' | 'portfolio' }) {
   return (
     <nav aria-label="Dashboard" className="no-print hidden w-64 shrink-0 px-4 py-6 md:block">
-      <NavItems />
+      <NavItems mode={mode} />
     </nav>
   );
 }
 
-export function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MobileNav({
+  open,
+  onClose,
+  mode,
+}: {
+  open: boolean;
+  onClose: () => void;
+  mode: 'tickets' | 'portfolio';
+}) {
   return (
     <Dialog.Root
       open={open}
@@ -90,7 +121,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
               <X aria-hidden="true" className="h-5 w-5" />
             </Dialog.Close>
           </div>
-          <NavItems onNavigate={onClose} />
+          <NavItems mode={mode} onNavigate={onClose} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

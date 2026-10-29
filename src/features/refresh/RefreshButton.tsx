@@ -83,6 +83,11 @@ export function RefreshButton() {
           </div>
         </div>
       ) : null}
+      {state.phase === 'idle' && state.message && state.message !== 'Data updated' ? (
+        <span className="sr-only" role="status">
+          {state.message}
+        </span>
+      ) : null}
       {state.error && state.phase === 'idle' ? (
         <Link
           to="/about"

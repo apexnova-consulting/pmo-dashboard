@@ -1,12 +1,13 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import type { DashContext } from '@/components/layout/AppShell';
-import { PriorityBadge, StatusLabel } from '@/components/common/Badges';
+import { ExternalAnchor, PriorityBadge, StatusLabel } from '@/components/common/Badges';
 import { OwnerAvatar } from '@/components/common/OwnerAvatar';
 import { RagBadge } from '@/components/common/RagBadge';
 import { EmptyState, PageHeader, PageSkeleton } from '@/components/common/States';
 import { KpiCard } from '@/components/kpi/KpiCard';
 import { formatDay } from '@/domain/dates';
 import { jiraUrl, phaseLabel } from '@/domain/derive';
+import { MyProjects } from '@/features/my-work/MyProjects';
 import { isAllOwners } from '@/domain/filters';
 import { useScopedHref } from '@/hooks/useFilters';
 
@@ -23,6 +24,7 @@ export default function MyWorkPage() {
     );
   }
   const { model } = dash;
+  if (model.mode === 'portfolio') return <MyProjects dash={dash} />;
   const selection = dash.owners.selection;
   const people = model.team.filter((member) => selection.ids.includes(member.id));
   const title = isAllOwners(selection)
@@ -77,14 +79,12 @@ export default function MyWorkPage() {
                     key={item.ticket.key}
                     className="grid gap-2 px-4 py-3 md:grid-cols-[8rem_1fr_8rem_8rem]"
                   >
-                    <a
-                      className="link font-bold"
+                    <ExternalAnchor
+                      className="font-bold"
                       href={jiraUrl(model.jiraBaseUrl, item.ticket.key, item.ticket.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
                     >
                       {item.ticket.key}
-                    </a>
+                    </ExternalAnchor>
                     <span>
                       <span className="block">{item.ticket.summary}</span>
                       <span className="text-sm text-muted">{item.projectName}</span>

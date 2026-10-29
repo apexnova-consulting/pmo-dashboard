@@ -7,11 +7,20 @@ import type {
   Snapshot,
   TeamMember,
   Ticket,
+  Update,
 } from '@/data/schema';
 import type { DomainOptions } from '@/lib/config';
 import { countAging } from './aging';
 import { addDaysYmd, calendarDate, calendarDaysBetween } from './dates';
-import { isAllOwners, projectRole, ticketMatchesOwner, type OwnerSelection } from './filters';
+import {
+  isAllOwners,
+  portfolioProjectRole,
+  projectRole,
+  ticketMatchesOwner,
+  type OwnerSelection,
+} from './filters';
+import { explainPortfolioHealth, portfolioHealthOptions } from './health';
+import { getMode, type DashboardMode } from './mode';
 import {
   completionOf,
   explainRag,
@@ -20,6 +29,7 @@ import {
   ticketFacts,
   type RagResult,
 } from './metrics';
+import { portfolioKpis, type PortfolioKpis } from './portfolio';
 
 export interface EnrichedTicket {
   ticket: Ticket;
@@ -44,6 +54,23 @@ export interface EnrichedMilestone {
   upcoming: boolean;
 }
 
+export interface EnrichedUpdate {
+  update: Update;
+  projectName: string;
+  author: TeamMember | null;
+  ageDays: number;
+}
+
+export interface LeadLoadRow {
+  id: string;
+  name: string;
+  color: string;
+  projects: number;
+  blocked: number;
+  openRisks: number;
+  latestUpdate: string | null;
+}
+
 export interface EnrichedProject {
   project: Project;
   rag: RagResult;
@@ -52,12 +79,16 @@ export interface EnrichedProject {
   blocked: number;
   done: number;
   total: number;
-  completion: ReturnType<typeof completionOf>;
+  completion: {
+    ratio: number | null;
+    basis: 'count' | 'story_points' | 'none' | 'reported';
+  };
   nextMilestone: EnrichedMilestone | null;
   lastUpdated: string | null;
   trend: HistoryPoint['ragCounts'] extends never ? never : ('red' | 'amber' | 'green')[];
   role: 'lead' | 'contributor' | 'unassigned' | null;
   lead: TeamMember | null;
+  openRisks: number;
 }
 
 export interface WeekPoint {
@@ -87,7 +118,9 @@ export interface WorkloadRow {
 export interface DashboardModel {
   asOf: string;
   timeZone: string;
-  jiraBaseUrl: string;
+  mode: DashboardMode;
+  jiraBaseUrl: string | null;
+  nextScheduledRun: string | null;
   team: TeamMember[];
   filtered: boolean;
   tickets: EnrichedTicket[];
@@ -116,6 +149,10 @@ export interface DashboardModel {
   blockedTickets: EnrichedTicket[];
   staleTickets: EnrichedTicket[];
   workload: WorkloadRow[];
+  updates: EnrichedUpdate[];
+  portfolioKpis: PortfolioKpis | null;
+  needsProjects: EnrichedProject[];
+  leadLoad: LeadLoadRow[];
   myWork: {
     groups: { id: string; title: string; tickets: EnrichedTicket[] }[];
     leadProjects: EnrichedProject[];
@@ -123,7 +160,7 @@ export interface DashboardModel {
   };
 }
 
-const RAG_ORDER = { red: 0, amber: 1, green: 2 } as const;
+const RAG_ORDER = { red: 0, amber: 1, green: 2, none: 3 } as const;
 const EMPTY_PRIORITY: Record<Priority, number> = {
   highest: 0,
   high: 0,
@@ -159,9 +196,9 @@ function weekSeries(
   if (!filtered && history.length > 0) {
     return history.slice(-12).map((point) => ({
       date: point.date,
-      created: point.created,
-      resolved: point.resolved,
-      open: point.open,
+      created: point.created ?? 0,
+      resolved: point.resolved ?? 0,
+      open: point.open ?? 0,
       red: point.ragCounts.red,
       amber: point.ragCounts.amber,
       green: point.ragCounts.green,
@@ -222,8 +259,13 @@ function throughputSeries(tickets: EnrichedTicket[], asOfDay: string, timeZone: 
   });
 }
 
-export function jiraUrl(base: string, key: string, explicit?: string): string {
+export function jiraUrl(
+  base: string | null | undefined,
+  key: string,
+  explicit?: string,
+): string | null {
   if (explicit) return explicit;
+  if (!base) return null;
   return `${base.replace(/\/$/, '')}/browse/${encodeURIComponent(key)}`;
 }
 
@@ -235,9 +277,11 @@ export function deriveDashboard(
   const timeZone = snapshot.meta.timezone || 'America/New_York';
   const asOf = snapshot.generatedAt;
   const asOfDay = calendarDate(asOf, timeZone);
+  const mode = getMode(snapshot);
   const teamById = new Map(snapshot.team.map((member) => [member.id, member]));
   const projectByKey = new Map(snapshot.projects.map((project) => [project.key, project]));
   const filtered = !isAllOwners(selection);
+  const healthOptions = portfolioHealthOptions();
 
   const allEnriched: EnrichedTicket[] = snapshot.tickets.map((ticket) => {
     const facts = ticketFacts(ticket, asOf, timeZone, options);
@@ -258,18 +302,32 @@ export function deriveDashboard(
       const scoped = filtered
         ? projectTickets.filter((item) => ticketMatchesOwner(item.ticket, selection))
         : projectTickets;
-      const role = projectRole(project, openForRole, selection);
+      const role =
+        mode === 'portfolio'
+          ? portfolioProjectRole(project, snapshot.updates, selection)
+          : projectRole(project, openForRole, selection);
       const milestones = snapshot.milestones.filter(
         (milestone) => milestone.projectKey === project.key,
       );
-      const rag = explainRag(
-        project,
-        projectTickets.map((item) => item.ticket),
-        milestones,
-        asOf,
-        timeZone,
-        options,
-      );
+      const projectUpdates = snapshot.updates.filter((update) => update.projectKey === project.key);
+      const rag =
+        mode === 'portfolio'
+          ? explainPortfolioHealth(
+              project,
+              snapshot.updates,
+              snapshot.risks,
+              asOf,
+              timeZone,
+              healthOptions,
+            )
+          : explainRag(
+              project,
+              projectTickets.map((item) => item.ticket),
+              milestones,
+              asOf,
+              timeZone,
+              options,
+            );
       const incomplete = milestones
         .filter((milestone) => !milestone.completedDate)
         .map((milestone) => ({
@@ -283,10 +341,22 @@ export function deriveDashboard(
           const bDate = b.milestone.forecastDate ?? b.milestone.plannedDate;
           return aDate.localeCompare(bDate);
         });
-      const lastUpdated = projectTickets.reduce<string | null>((latest, item) => {
-        if (!latest || item.ticket.updated > latest) return item.ticket.updated;
-        return latest;
-      }, null);
+      const lastUpdated =
+        mode === 'portfolio'
+          ? (projectUpdates
+              .map((update) => update.date)
+              .sort()
+              .at(-1) ??
+            project.lastUpdateDate ??
+            null)
+          : projectTickets.reduce<string | null>((latest, item) => {
+              if (!latest || item.ticket.updated > latest) return item.ticket.updated;
+              return latest;
+            }, null);
+      const reportedCompletion =
+        project.percentComplete == null
+          ? null
+          : { ratio: project.percentComplete / 100, basis: 'reported' as const };
       const trend = [...snapshot.history]
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-8)
@@ -297,21 +367,31 @@ export function deriveDashboard(
         rag,
         open: scoped.filter((item) => item.open).length,
         overdue: scoped.filter((item) => item.overdue).length,
-        blocked: scoped.filter((item) => item.blocked).length,
+        blocked:
+          mode === 'portfolio'
+            ? projectUpdates.filter((update) => update.status === 'open' && update.blocked).length
+            : scoped.filter((item) => item.blocked).length,
         done: scoped.filter((item) => item.ticket.statusCategory === 'done').length,
         total: scoped.length,
-        completion: completionOf(scoped.map((item) => item.ticket)),
+        completion:
+          mode === 'portfolio' && reportedCompletion
+            ? reportedCompletion
+            : completionOf(scoped.map((item) => item.ticket)),
         nextMilestone: incomplete[0] ?? null,
         lastUpdated,
         trend,
         role: filtered ? role : project.leadId == null ? 'unassigned' : null,
         lead: project.leadId ? (teamById.get(project.leadId) ?? null) : null,
+        openRisks: snapshot.risks.filter(
+          (risk) => risk.projectKey === project.key && risk.status !== 'closed',
+        ).length,
       };
     })
     .filter((project) => (filtered ? project.role != null : true))
     .sort((a, b) => {
       const ragDiff = RAG_ORDER[a.rag.rag] - RAG_ORDER[b.rag.rag];
       if (ragDiff !== 0) return ragDiff;
+      if (mode === 'portfolio') return b.blocked - a.blocked || b.openRisks - a.openRisks;
       return b.overdue - a.overdue;
     });
 
@@ -357,7 +437,7 @@ export function deriveDashboard(
     (item) => item.blocked && item.daysSinceUpdate > 5,
   ).length;
   const attention: DashboardModel['attention'] = [];
-  if (overdue > 0) {
+  if (mode === 'tickets' && overdue > 0) {
     attention.push({
       id: 'overdue',
       label: `${overdue} overdue ${overdue === 1 ? 'ticket' : 'tickets'}`,
@@ -373,7 +453,7 @@ export function deriveDashboard(
       tone: 'red',
     });
   }
-  if (blockedLong > 0) {
+  if (mode === 'tickets' && blockedLong > 0) {
     attention.push({
       id: 'blocked',
       label: `${blockedLong} blocked more than 5 days`,
@@ -492,13 +572,136 @@ export function deriveDashboard(
       .sort((a, b) => (b.ticket.resolvedAt ?? '').localeCompare(a.ticket.resolvedAt ?? '')),
   };
 
-  const openDelta = !filtered && historyPoint ? open - historyPoint.open : null;
-  const overdueDelta = !filtered && historyPoint ? overdue - historyPoint.overdue : null;
+  const openDelta = !filtered && historyPoint?.open != null ? open - historyPoint.open : null;
+  const overdueDelta =
+    !filtered && historyPoint?.overdue != null ? overdue - historyPoint.overdue : null;
+
+  const updates: EnrichedUpdate[] = snapshot.updates
+    .filter((update) => !filtered || inScope.has(update.projectKey))
+    .map((update) => ({
+      update,
+      projectName: projectByKey.get(update.projectKey)?.name ?? update.projectKey,
+      author: update.authorId ? (teamById.get(update.authorId) ?? null) : null,
+      ageDays: calendarDaysBetween(asOfDay, update.date),
+    }))
+    .sort(
+      (a, b) =>
+        b.update.date.localeCompare(a.update.date) || b.update.id.localeCompare(a.update.id),
+    );
+
+  const needsProjects = projects
+    .filter(
+      (project) =>
+        project.rag.rag === 'red' ||
+        project.blocked > 0 ||
+        project.rag.reasons.some((reason) => reason.rule === 'No recent update'),
+    )
+    .slice(0, 10);
+
+  const peopleForLeads: { id: string; name: string; color: string }[] = [
+    ...snapshot.team.map((member) => ({
+      id: member.id,
+      name: member.displayName,
+      color: member.avatarColor || 'var(--series-2)',
+    })),
+    { id: 'unassigned', name: 'Unassigned', color: 'var(--series-neutral)' },
+  ];
+  const leadLoad: LeadLoadRow[] = peopleForLeads
+    .filter((person) => {
+      if (!filtered) return true;
+      if (person.id === 'unassigned') return selection.includeUnassigned;
+      return selection.ids.includes(person.id);
+    })
+    .map((person) => {
+      const led = projects.filter((project) =>
+        person.id === 'unassigned'
+          ? project.project.leadId == null
+          : project.project.leadId === person.id,
+      );
+      const latest = led
+        .map((project) => project.lastUpdated)
+        .filter((date): date is string => Boolean(date))
+        .sort()
+        .at(-1);
+      return {
+        id: person.id,
+        name: person.name,
+        color: person.color,
+        projects: led.length,
+        blocked: led.filter((project) => project.blocked > 0).length,
+        openRisks: led.reduce((sum, project) => sum + project.openRisks, 0),
+        latestUpdate: latest ?? null,
+      };
+    });
+
+  if (mode === 'portfolio') {
+    attention.length = 0;
+    if (projectCounts.red > 0) {
+      attention.push({
+        id: 'red',
+        label: `${projectCounts.red} ${projectCounts.red === 1 ? 'project' : 'projects'} Red`,
+        href: '/projects?rag=red',
+        tone: 'red',
+      });
+    }
+    const blockedProjects = projects.filter((project) => project.blocked > 0).length;
+    if (blockedProjects > 0) {
+      attention.push({
+        id: 'blocked',
+        label: `${blockedProjects} blocked ${blockedProjects === 1 ? 'project' : 'projects'}`,
+        href: '/risks',
+        tone: 'red',
+      });
+    }
+    const staleCount = projects.filter((project) =>
+      project.rag.reasons.some((reason) => reason.rule === 'No recent update'),
+    ).length;
+    if (staleCount > 0) {
+      attention.push({
+        id: 'stale',
+        label: `${staleCount} ${staleCount === 1 ? 'project' : 'projects'} with no recent update`,
+        href: '/risks',
+        tone: 'amber',
+      });
+    }
+    const dueSoon = projects.filter((project) => {
+      const date = project.project.nextMilestoneDate;
+      return date != null && date >= asOfDay && date <= addDaysYmd(asOfDay, 14);
+    }).length;
+    if (dueSoon > 0) {
+      attention.push({
+        id: 'milestones',
+        label: `${dueSoon} ${dueSoon === 1 ? 'milestone' : 'milestones'} due in 14 days`,
+        href: '/projects',
+        tone: 'amber',
+      });
+    }
+  }
+
+  const kpisPortfolio =
+    mode === 'portfolio'
+      ? portfolioKpis(
+          {
+            ...snapshot,
+            projects: projects.map((project) => project.project),
+            updates: snapshot.updates.filter((update) => inScope.has(update.projectKey)),
+            risks,
+            milestones: snapshot.milestones.filter((milestone) =>
+              inScope.has(milestone.projectKey),
+            ),
+            history: filtered ? [] : snapshot.history,
+          },
+          projects,
+          healthOptions,
+        )
+      : null;
 
   return {
     asOf,
     timeZone,
-    jiraBaseUrl: snapshot.meta.jiraBaseUrl,
+    mode,
+    jiraBaseUrl: snapshot.meta.jiraBaseUrl ?? null,
+    nextScheduledRun: snapshot.meta.nextScheduledRun ?? null,
     team: snapshot.team,
     filtered,
     tickets: visibleTickets,
@@ -508,7 +711,7 @@ export function deriveDashboard(
     kpis: {
       projects: projectCounts,
       open,
-      openDelta: historyPoint && !filtered ? open - historyPoint.open : openDelta,
+      openDelta,
       overdue,
       overdueDelta,
       dueSoon: visibleTickets.filter((item) => item.dueSoon).length,
@@ -517,7 +720,11 @@ export function deriveDashboard(
       throughputSeries: throughputSeries(visibleTickets, asOfDay, timeZone),
       netFlow: lastWeek ? lastWeek.created - lastWeek.resolved : null,
     },
-    attention: attention.slice(0, 3),
+    attention: attention.slice(0, mode === 'portfolio' ? 4 : 3),
+    updates,
+    portfolioKpis: kpisPortfolio,
+    needsProjects,
+    leadLoad,
     needsAttention,
     upcoming,
     weeks,

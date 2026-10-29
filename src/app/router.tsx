@@ -8,6 +8,7 @@ const MyWorkPage = lazy(() => import('@/features/my-work/MyWorkPage'));
 const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage'));
 const ProjectDetailPage = lazy(() => import('@/features/projects/ProjectDetailPage'));
 const TicketsPage = lazy(() => import('@/features/tickets/TicketsPage'));
+const UpdatesRoute = lazy(() => import('@/features/updates/UpdatesRoute'));
 const RisksPage = lazy(() => import('@/features/risks/RisksPage'));
 const WorkloadPage = lazy(() => import('@/features/workload/WorkloadPage'));
 const AboutPage = lazy(() => import('@/features/about/AboutPage'));
@@ -29,6 +30,7 @@ export function AppRoutes() {
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:key" element={<ProjectDetailPage />} />
           <Route path="tickets" element={<TicketsPage />} />
+          <Route path="updates" element={<UpdatesRoute />} />
           <Route path="risks" element={<RisksPage />} />
           <Route path="workload" element={<WorkloadPage />} />
           <Route path="about" element={<AboutPage />} />

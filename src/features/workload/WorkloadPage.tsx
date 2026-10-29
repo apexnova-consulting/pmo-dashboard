@@ -1,5 +1,6 @@
 import { useOutletContext } from 'react-router-dom';
 import type { DashContext } from '@/components/layout/AppShell';
+import { LeadLoad } from '@/features/workload/LeadLoad';
 import { WorkloadChart } from '@/components/charts/Charts';
 import { OwnerAvatar } from '@/components/common/OwnerAvatar';
 import { EmptyState, PageHeader, PageSkeleton } from '@/components/common/States';
@@ -8,6 +9,7 @@ export default function WorkloadPage() {
   const dash = useOutletContext<DashContext>();
   if (dash.isLoading && !dash.model) return <PageSkeleton />;
   if (!dash.model) return <EmptyState title="No workload" body="The snapshot did not load." />;
+  if (dash.model.mode === 'portfolio') return <LeadLoad dash={dash} />;
   const unit = dash.snapshot?.meta.capacityUnit;
   return (
     <div>

@@ -2,7 +2,7 @@ import type { Milestone, Priority, Project, Ticket } from '@/data/schema';
 import { RAG_CONFIG, type DomainOptions } from '@/lib/config';
 import { addDaysYmd, calendarDate, calendarDaysBetween } from './dates';
 
-export type RagLevel = 'red' | 'amber' | 'green';
+export type RagLevel = 'red' | 'amber' | 'green' | 'none';
 
 export interface RagReason {
   level: 'red' | 'amber';
@@ -302,5 +302,50 @@ export const METRICS: { id: string; name: string; definition: string }[] = [
     name: 'Days blocked',
     definition:
       'Days since the blocked ticket was last updated. The snapshot has no blocked-since timestamp, so this is the time sitting in the current update.',
+  },
+  {
+    id: 'portfolioHealth',
+    name: 'Projects by health',
+    definition:
+      'Red, amber, green, or no data. Red wins over amber. A project with no updates and no reported health is No data, never Green. A PMO override wins.',
+  },
+  {
+    id: 'activeProjects',
+    name: 'Active projects',
+    definition: 'Projects whose phase is Active.',
+  },
+  {
+    id: 'blockedProjects',
+    name: 'Blocked projects',
+    definition: 'Projects with at least one open update marked blocked.',
+  },
+  {
+    id: 'openRisks',
+    name: 'Open high or critical risks',
+    definition: 'Risks that are not closed and are marked high or critical.',
+  },
+  {
+    id: 'staleProjects',
+    name: 'No recent update',
+    definition:
+      'Projects whose latest update is at least the amber silence threshold (default 10 days). Projects with no updates are No data, not counted here.',
+  },
+  {
+    id: 'milestonesDue',
+    name: 'Milestones due in 14 days',
+    definition:
+      'Next milestone dates, or incomplete milestone dates, from the snapshot day through 14 calendar days later. Shown as n/a when the snapshot has no milestone dates.',
+  },
+  {
+    id: 'updatesWeek',
+    name: 'Updates this week',
+    definition:
+      'Updates dated in the seven calendar days ending on the snapshot day. The change versus the previous week is shown when history has an earlier point.',
+  },
+  {
+    id: 'portfolioAssigned',
+    name: 'Assigned project',
+    definition:
+      'A project is in a person’s view when they are the lead, or they are the author or owner on an open update. Unassigned covers a missing lead or an open update with no author or owner.',
   },
 ];

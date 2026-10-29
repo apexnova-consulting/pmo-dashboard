@@ -3,7 +3,6 @@
 interface ImportMetaEnv {
   readonly VITE_DATA_SOURCE?: string;
   readonly VITE_API_BASE_URL?: string;
-  readonly VITE_JIRA_BASE_URL?: string;
   readonly VITE_TIMEZONE?: string;
   readonly VITE_STALE_AFTER_HOURS?: string;
   readonly VITE_REFRESH_POLL_MS?: string;

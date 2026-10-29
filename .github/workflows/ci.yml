@@ -18,4 +18,17 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run schema:export
+      - run: git diff --exit-code docs/snapshot.schema.json
+      - run: npm run fixtures:write
+      - run: git diff --exit-code src/data/mock/fixtures/portfolio.v2.json src/data/mock/fixtures/legacy.v1.json
+      - run: npm run validate:snapshot -- src/data/mock/fixtures/portfolio.v2.json
+      - run: npm run validate:snapshot -- src/data/mock/fixtures/legacy.v1.json
+      - run: npm run check:vite-secrets
+      - name: Broken fixture must fail validation
+        run: |
+          if npm run validate:snapshot -- src/data/mock/fixtures/broken.json; then
+            echo "broken fixture was accepted"
+            exit 1
+          fi
       - run: npm audit --omit=dev --audit-level=critical

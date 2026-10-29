@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "yesterday",
+  "meta": { "timezone": "Not/AZone" },
+  "team": [{ "id": "shuchi" }],
+  "projects": [{ "name": "Missing key", "phase": "active" }],
+  "updates": [
+    {
+      "id": "bad-1",
+      "projectKey": "SIS",
+      "date": "10/28/2026",
+      "type": "note",
+      "title": "Bad type",
+      "summary": "This row uses a choice value the snapshot does not allow.",
+      "authorId": "shuchi",
+      "healthSignal": "Green",
+      "blocked": "Yes",
+      "status": "Open",
+      "source": "Email"
+    }
+  ]
+}

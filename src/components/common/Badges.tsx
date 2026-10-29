@@ -1,6 +1,8 @@
-import { ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, Minus } from 'lucide-react';
-import type { Priority } from '@/data/schema';
+import { ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, Mail, Minus } from 'lucide-react';
+import type { MouseEvent, ReactNode } from 'react';
+import type { Priority, RiskLevel } from '@/data/schema';
 import { priorityLabel } from '@/domain/derive';
+import { cn } from '@/lib/utils';
 
 const icons = {
   highest: ChevronsUp,
@@ -17,6 +19,69 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
       <Icon aria-hidden="true" className="h-4 w-4" />
       {priorityLabel(priority)}
     </span>
+  );
+}
+
+const riskLabels: Record<RiskLevel, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  critical: 'Critical',
+};
+
+export function RiskLevelBadge({ level }: { level: RiskLevel }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-sm font-bold">
+      <Minus aria-hidden="true" className="h-4 w-4" />
+      {riskLabels[level]}
+    </span>
+  );
+}
+
+export function SourceBadge({ source, href }: { source: 'list' | 'email'; href?: string }) {
+  const label = source === 'email' ? 'Email' : 'List';
+  const body = (
+    <span className="inline-flex items-center gap-1 text-sm">
+      {source === 'email' ? <Mail aria-hidden="true" className="h-4 w-4" /> : null}
+      {label}
+    </span>
+  );
+  if (source === 'email' && href) {
+    return (
+      <a className="link" href={href} target="_blank" rel="noopener noreferrer">
+        {body}
+        <span className="sr-only"> source</span>
+      </a>
+    );
+  }
+  return body;
+}
+
+export function ExternalAnchor({
+  href,
+  children,
+  sr,
+  className,
+  onClick,
+}: {
+  href: string | null;
+  children: ReactNode;
+  sr?: string;
+  className?: string;
+  onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+}) {
+  if (!href) return <span className={className}>{children}</span>;
+  return (
+    <a
+      className={cn('link', className)}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+    >
+      {children}
+      {sr ? <span className="sr-only"> {sr}</span> : null}
+    </a>
   );
 }
 

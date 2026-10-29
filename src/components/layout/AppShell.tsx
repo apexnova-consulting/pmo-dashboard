@@ -15,6 +15,7 @@ const titles: Record<string, string> = {
   '/my-work': 'My Work',
   '/projects': 'Projects',
   '/tickets': 'Tickets & Tasks',
+  '/updates': 'Updates',
   '/risks': 'Risks & Blockers',
   '/workload': 'Workload',
   '/about': 'Data & Status',
@@ -25,9 +26,23 @@ export function AppShell() {
   const location = useLocation();
   const announce = useAnnounce();
   const [menu, setMenu] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState<string | null>(null);
+  useEffect(() => {
+    const onNotice = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      setRefreshNotice(detail && detail !== 'Data updated' ? detail : null);
+    };
+    window.addEventListener('pmo-refresh-notice', onNotice);
+    return () => window.removeEventListener('pmo-refresh-notice', onNotice);
+  }, []);
+  const mode = dash.model?.mode ?? 'portfolio';
   const base = location.pathname.startsWith('/projects/')
     ? 'Project'
-    : (titles[location.pathname] ?? 'PMO Dashboard');
+    : location.pathname === '/my-work' && mode === 'portfolio'
+      ? 'My Projects'
+      : location.pathname === '/workload' && mode === 'portfolio'
+        ? 'Projects per lead'
+        : (titles[location.pathname] ?? 'PMO Dashboard');
 
   useEffect(() => {
     document.title = `${base} · CCNY PMO Dashboard`;
@@ -80,6 +95,20 @@ export function AppShell() {
           Data has not updated since{' '}
           {formatDataAsOf(dash.snapshot.generatedAt, dash.snapshot.meta.timezone)}. A daily run may
           have been missed.
+          {dash.snapshot.meta.nextScheduledRun
+            ? ` Next scheduled run ${formatDataAsOf(dash.snapshot.meta.nextScheduledRun, dash.snapshot.meta.timezone)}.`
+            : ''}
+        </div>
+      ) : null}
+      {refreshNotice ? (
+        <div className="border-b border-line bg-card px-4 py-2 text-sm" role="status">
+          {refreshNotice}
+        </div>
+      ) : null}
+      {!stale && dash.snapshot?.meta.nextScheduledRun ? (
+        <div className="border-b border-line px-4 py-2 text-sm text-muted" role="status">
+          Next scheduled run{' '}
+          {formatDataAsOf(dash.snapshot.meta.nextScheduledRun, dash.snapshot.meta.timezone)}.
         </div>
       ) : null}
       {dash.showingStale ? (
@@ -96,7 +125,7 @@ export function AppShell() {
         </div>
       ) : null}
       <div className="mx-auto flex max-w-[1440px]">
-        <Sidebar />
+        <Sidebar mode={mode} />
         <main id="main" className="min-w-0 flex-1 px-4 py-6 md:px-6">
           <Outlet context={dash} />
           <footer className="mt-10 border-t border-line pt-4 text-sm text-muted">
@@ -104,7 +133,7 @@ export function AppShell() {
           </footer>
         </main>
       </div>
-      <MobileNav open={menu} onClose={() => setMenu(false)} />
+      <MobileNav open={menu} onClose={() => setMenu(false)} mode={mode} />
     </div>
   );
 }

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-28T06:00:00-04:00",
+  "meta": {
+    "jiraBaseUrl": "https://ccny-pmo.atlassian.net",
+    "timezone": "America/New_York",
+    "capacityUnit": "open tickets",
+    "source": "mock ticket snapshot"
+  },
+  "team": [
+    {
+      "id": "shuchi",
+      "displayName": "Shuchi",
+      "role": "PMO lead",
+      "avatarColor": "#5C3A96"
+    },
+    {
+      "id": "marta",
+      "displayName": "Marta",
+      "role": "PMO lead",
+      "avatarColor": "#009E73"
+    }
+  ],
+  "projects": [
+    {
+      "key": "SIS",
+      "name": "Student Information System",
+      "leadId": "shuchi",
+      "phase": "active",
+      "targetEndDate": "2026-12-15"
+    },
+    {
+      "key": "LMS",
+      "name": "Learning Management Upgrade",
+      "leadId": "marta",
+      "phase": "active"
+    }
+  ],
+  "tickets": [
+    {
+      "key": "SIS-1",
+      "summary": "Confirm the cutover window",
+      "type": "Task",
+      "projectKey": "SIS",
+      "statusName": "In Progress",
+      "statusCategory": "in_progress",
+      "priority": "high",
+      "assigneeId": "shuchi",
+      "assigneeName": "Shuchi",
+      "created": "2026-10-01T10:00:00-04:00",
+      "updated": "2026-10-20T10:00:00-04:00",
+      "dueDate": "2026-10-15",
+      "resolvedAt": null,
+      "labels": [],
+      "flagged": false,
+      "url": "https://ccny-pmo.atlassian.net/browse/SIS-1"
+    },
+    {
+      "key": "LMS-1",
+      "summary": "Write the faculty change guide",
+      "type": "Task",
+      "projectKey": "LMS",
+      "statusName": "To Do",
+      "statusCategory": "todo",
+      "priority": "medium",
+      "assigneeId": "marta",
+      "assigneeName": "Marta",
+      "created": "2026-10-10T10:00:00-04:00",
+      "updated": "2026-10-27T10:00:00-04:00",
+      "dueDate": "2026-11-02",
+      "resolvedAt": null,
+      "labels": [],
+      "flagged": false
+    }
+  ],
+  "milestones": [],
+  "risks": [
+    {
+      "id": "legacy-risk",
+      "title": "Cutover window",
+      "projectKey": "SIS",
+      "probability": 3,
+      "impact": 4,
+      "ownerId": "shuchi",
+      "status": "open"
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-10-21",
+      "open": 2,
+      "overdue": 1,
+      "blocked": 0,
+      "created": 1,
+      "resolved": 0,
+      "ragCounts": {
+        "red": 1,
+        "amber": 0,
+        "green": 1
+      }
+    },
+    {
+      "date": "2026-10-28",
+      "open": 2,
+      "overdue": 1,
+      "blocked": 0,
+      "created": 0,
+      "resolved": 0,
+      "ragCounts": {
+        "red": 1,
+        "amber": 0,
+        "green": 1
+      }
+    }
+  ]
+}

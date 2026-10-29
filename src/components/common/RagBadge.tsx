@@ -1,4 +1,4 @@
-import { Check, Circle, Triangle } from 'lucide-react';
+import { Check, Circle, Minus, Triangle } from 'lucide-react';
 import type { RagResult } from '@/domain/metrics';
 import { cn } from '@/lib/utils';
 import { Popover } from '@/components/ui/popover';
@@ -7,18 +7,20 @@ const styles = {
   red: 'bg-rag-red-bg text-rag-red',
   amber: 'bg-rag-amber-bg text-rag-amber',
   green: 'bg-rag-green-bg text-rag-green',
+  none: 'bg-sunken text-muted',
 } as const;
 
-const labels = { red: 'Red', amber: 'Amber', green: 'Green' } as const;
+const labels = { red: 'Red', amber: 'Amber', green: 'Green', none: 'No data' } as const;
 
 export function RagBadge({
   rag,
   className,
 }: {
-  rag: 'red' | 'amber' | 'green';
+  rag: 'red' | 'amber' | 'green' | 'none';
   className?: string;
 }) {
-  const Icon = rag === 'green' ? Check : rag === 'amber' ? Triangle : Circle;
+  const Icon =
+    rag === 'green' ? Check : rag === 'amber' ? Triangle : rag === 'none' ? Minus : Circle;
   return (
     <span
       className={cn(
@@ -54,6 +56,9 @@ export function RagWhy({ result }: { result: RagResult }) {
       ) : null}
       {result.rag === 'green' && !result.overridden ? (
         <p className="mt-2">No red or amber threshold was met.</p>
+      ) : null}
+      {result.rag === 'none' && !result.overridden ? (
+        <p className="mt-2">No data. This is not marked Green.</p>
       ) : null}
       {result.reasons.length > 0 ? (
         <ul className="mt-2 list-disc space-y-1 pl-4">
