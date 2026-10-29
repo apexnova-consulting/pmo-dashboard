@@ -1,0 +1,84 @@
+/*
+  Brand colors confirmed against the CCNY Style & Brand Guidelines (updated 5/26/2026)
+  and the Off-Site CMS header spec (header purple #7D55C7).
+
+  Primary purple  PMS 2665 C  #7D55C7
+  Primary gray    PMS 425 C   #545859
+  Accent yellow   PMS 129 C   #F3D03E  (secondary palette; used only as the accent bar)
+
+  Cream page surface is the dashboard guide's operations-console ground, not a logo color.
+  Components must use these variables. Do not hard-code hex values in TSX.
+*/
+:root {
+  --brand-purple: #7d55c7;
+  --brand-purple-strong: #5c3a96;
+  --brand-purple-tint: #eee9f8;
+  --brand-yellow: #f3d03e;
+  --brand-gray: #545859;
+  --header-bg: #7d55c7;
+  --header-fg: #ffffff;
+
+  --bg-page: #fdf6e3;
+  --bg-card: #ffffff;
+  --bg-sunken: #f7efd9;
+  --border: #d2d2d8;
+  --text: #111111;
+  --text-muted: #545859;
+  --text-on-brand: #ffffff;
+  --link: #5c3a96;
+  --focus-ring: #7d55c7;
+
+  --rag-red: #c62828;
+  --rag-red-bg: #fdecea;
+  --rag-amber: #8a4b00;
+  --rag-amber-bg: #fff1d6;
+  --rag-green: #2e7d32;
+  --rag-green-bg: #e6f4e7;
+
+  --series-1: #7d55c7;
+  --series-2: #0072b2;
+  --series-3: #e69f00;
+  --series-4: #009e73;
+  --series-5: #cc79a7;
+  --series-6: #56b4e9;
+  --series-neutral: #545859;
+
+  --font-sans: 'Lato', Verdana, Tahoma, 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Raleway', Verdana, Tahoma, 'Segoe UI', sans-serif;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --brand-purple: #9b82db;
+  --brand-purple-strong: #c4b4ee;
+  --brand-purple-tint: #2f2644;
+  --header-bg: #7d55c7;
+  --header-fg: #ffffff;
+
+  --bg-page: #17131f;
+  --bg-card: #211b2d;
+  --bg-sunken: #2a2338;
+  --border: #6e6488;
+  --text: #f5f1fa;
+  --text-muted: #b9b0cc;
+  --link: #c4b4ee;
+  --focus-ring: #c4b4ee;
+
+  --rag-red: #ff8a80;
+  --rag-red-bg: #3a1e22;
+  --rag-amber: #ffd18a;
+  --rag-amber-bg: #3a2a14;
+  --rag-green: #9be7a8;
+  --rag-green-bg: #16301a;
+
+  --series-1: #c4b4ee;
+  --series-2: #56b4e9;
+  --series-3: #e69f00;
+  --series-4: #009e73;
+  --series-5: #cc79a7;
+  --series-6: #0072b2;
+  --series-neutral: #b9b0cc;
+
+  color-scheme: dark;
+}

@@ -1,0 +1,143 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --color-page: var(--bg-page);
+  --color-card: var(--bg-card);
+  --color-sunken: var(--bg-sunken);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-brand: var(--brand-purple);
+  --color-brand-strong: var(--brand-purple-strong);
+  --color-brand-tint: var(--brand-purple-tint);
+  --color-accent: var(--brand-yellow);
+  --color-link: var(--link);
+  --color-on-brand: var(--header-fg);
+  --color-header: var(--header-bg);
+  --color-rag-red: var(--rag-red);
+  --color-rag-red-bg: var(--rag-red-bg);
+  --color-rag-amber: var(--rag-amber);
+  --color-rag-amber-bg: var(--rag-amber-bg);
+  --color-rag-green: var(--rag-green);
+  --color-rag-green-bg: var(--rag-green-bg);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--text);
+  line-height: 1.3;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.header-control:focus-visible {
+  outline-color: var(--header-fg);
+}
+
+.link {
+  color: var(--link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--brand-purple-strong);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.progress-indeterminate {
+  animation: progress-indeterminate 1.1s ease-in-out infinite;
+}
+
+@media print {
+  :root,
+  :root[data-theme='dark'] {
+    --bg-page: #ffffff;
+    --bg-card: #ffffff;
+    --bg-sunken: #f4f4f4;
+    --text: #111111;
+    --text-muted: #333333;
+    --border: #cccccc;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  .card,
+  .print-avoid {
+    break-inside: avoid;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+}

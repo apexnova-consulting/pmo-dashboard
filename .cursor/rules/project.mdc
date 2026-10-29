@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+
+- TypeScript strict. No `any`. Types come from the Zod schemas in `src/data/schema.ts`.
+- Business logic only in `src/domain/*.ts` as pure functions with unit tests. Components render.
+- Never call `fetch` directly in components. Use hooks, then `DataClient`.
+- Never hard-code owner names. Derive people from `snapshot.team`.
+- Compute dates from `snapshot.generatedAt` in the snapshot timezone, not the browser clock.
+- Every data view needs a loading, empty, and error state.
+- Never use color alone. RAG, priority, and status need an icon or text label.
+- Colors come from `src/styles/tokens.css`. Do not hard-code hex values in components.
+- No `dangerouslySetInnerHTML`. External links use `rel="noopener noreferrer"`.
+- Add or update tests with every feature.

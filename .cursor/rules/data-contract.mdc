@@ -1,0 +1,7 @@
+---
+description: Data contract for the Jira snapshot
+globs: src/data/schema.ts,docs/DATA_CONTRACT.md
+alwaysApply: false
+---
+
+Do not change `src/data/schema.ts` without bumping `schemaVersion` and updating `docs/DATA_CONTRACT.md`. Unknown JSON fields are ignored. A breaking change is any rename, removal, or tighter requirement.
